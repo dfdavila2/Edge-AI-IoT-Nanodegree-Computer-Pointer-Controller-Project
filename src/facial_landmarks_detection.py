@@ -1,117 +1,110 @@
-'''
-This is a sample class for a model. You may choose to use it as-is or make any changes to it.
-This has been provided just to give you an idea of how to structure your model class.
-'''
 
 import os
-from openvino.inference_engine import IENetwork, IECore
 import cv2
-import numpy as np
+from openvino.inference_engine import IECore
+from util_function import  preprocess_input
 
-
-class Landmark_Model:
+class Model_facial_landmarks_detection:
     '''
     Class for the Face Detection Model.
     '''
+    def __init__(self, model_name, device):
+        '''
+        Set instance variables.
+        '''
+        self.device=device
+        self.model=model_name
+        self.model_structure=model_name
+        self.model_weights=os.path.splitext(self.model_structure)[0] + ".bin"
+        
+        try:
+            self.model=IECore().read_network(self.model_structure, self.model_weights)
+        except Exception as e:
+            raise ValueError("Could not Initialise the network. Have you enterred the correct model path?")
 
-    def __init__(self, model_name, device='CPU', extensions=None):
-        self.core = None
-        self.network = None
-        self.input = None
-        self.output = None
-        self.mode = 'async'
-        self.exec_network = None
-        self.device = device
-
-        self.core = IECore()
-        self.network = self.core.read_network(model=str(model_name),
-                                              weights=str(os.path.splitext(model_name)[0] + ".bin"))
-
-        self.input = next(iter(self.network.inputs))
-        self.output = next(iter(self.network.outputs))
-
+        self.input_name=next(iter(self.model.inputs))
+        self.input_shape=self.model.inputs[self.input_name].shape
+        self.output_name=next(iter(self.model.outputs))
+        
     def load_model(self):
         '''
-        This method is for loading the model to the device specified by the user.
-        If your model requires any Plugins, this is where you can load them.
-        '''
-        self.exec_network = self.core.load_network(self.network, self.device)
+        Load the model to the specified device.
+        '''     
+        # Initialize the plugin
+        core = IECore()
+        
+        # Load the network into the plugin
+        self.exec_network = core.load_network(network=self.model, device_name=self.device)
+        
+        ### Return the loaded inference plugin ###
         return self.exec_network
 
-    def predict(self, image, eye_surrounding_area=10):
+    def predict(self, image, face, face_coords, display):
         '''
-        This method is meant for running predictions on the input image.
+        Run predictions on the input image.
         '''
-
-        processed_frame = self.preprocess_input(image)
-        self.exec_network.start_async(request_id=0,
-                                      inputs={self.input: processed_frame})
-        if self.mode == 'async':
-            self.exec_network.requests[0].wait()
-            result = self.exec_network.requests[0].outputs[self.output]
-            return self.preprocess_output(result, image, eye_surrounding_area)
-
-        else:
-
-            # inference_start_time = time.time()
-            if self.exec_network.requests[0].wait(-1) == 0:
-                #     inference_end_time = time.time()
-                #     total_inference_time = inference_end_time - inference_start_time
-                result = self.exec_network.requests[0].outputs[self.output]
-                return self.preprocess_output(result, image, eye_surrounding_area)
-
-    def check_model(self):
-        supported_layers = self.core.query_network(network=self.network, device_name=self.device)
-        unsupported_layers = [layer for layer in self.network.layers.keys() if layer not in supported_layers]
-        if len(unsupported_layers) > 0:
-            print("Please check extention for these unsupported layers =>" + str(unsupported_layers))
-            exit(1)
-        print("All layers are supported !!")
-
-    def preprocess_input(self, image):
+        ### Pre-process the image ###
+        p_frame = preprocess_input(face, self.input_shape)
+        
+        ### Start an asynchronous request ###
+        self.exec_network.start_async(request_id=0, inputs={self.input_name: p_frame})
+        
+        # Wait for the result
+        if self.exec_network.requests[0].wait(-1) == 0:
+            
+            # Get the results of the inference request
+            outputs = self.exec_network.requests[0].outputs[self.output_name]
+        
+            image, left_eye, right_eye, eyes_center = self.preprocess_output(outputs, face_coords, image, display)
+        
+        return image, left_eye, right_eye, eyes_center       
+        
+    def preprocess_output(self, outputs, face_coords, image, display):
         '''
-        Before feeding the data into the model for inference,
-        you might have to preprocess it. This function is where you can do that.
+        Preprocess the output before feeding it to the next model.
         '''
-        net_input_shape = self.network.inputs[self.input].shape
-        p_frame = cv2.resize(image, (net_input_shape[3], net_input_shape[2]))
-        p_frame = p_frame.transpose(2, 0, 1)
-        # p_frame = np.expand_dims(p_frame, axis=1)
-        p_frame = p_frame.reshape(1, *p_frame.shape)
-        return p_frame
+        # Get the landmarks from the outputs
+        landmarks = outputs.reshape(1, 10)[0]
 
-    def preprocess_output(self, outputs, image, eye_surrounding_area):
-        '''
-        Before feeding the output of this model to the next model,
-        you might have to preprocess the output. This function is where you can do that.
-        '''
-        leye_x = outputs[0][0].tolist()[0][0]
-        leye_y = outputs[0][1].tolist()[0][0]
-        reye_x = outputs[0][2].tolist()[0][0]
-        reye_y = outputs[0][3].tolist()[0][0]
-
-        box = (leye_x, leye_y, reye_x, reye_y)
-
-        h, w = image.shape[0:2]
-        # w = image.shape[1]
-        box = box * np.array([w, h, w, h])
-        box = box.astype(np.int32)
-
-        (lefteye_x, lefteye_y, righteye_x, righteye_y) = box
-        # cv2.rectangle(image,(lefteye_x,lefteye_y),(righteye_x,righteye_y),(255,0,0))
-
-        le_xmin = lefteye_x - eye_surrounding_area
-        le_ymin = lefteye_y - eye_surrounding_area
-        le_xmax = lefteye_x + eye_surrounding_area
-        le_ymax = lefteye_y + eye_surrounding_area
-
-        re_xmin = righteye_x - eye_surrounding_area
-        re_ymin = righteye_y - eye_surrounding_area
-        re_xmax = righteye_x + eye_surrounding_area
-        re_ymax = righteye_y + eye_surrounding_area
-
-        left_eye = image[le_ymin:le_ymax, le_xmin:le_xmax]
-        right_eye = image[re_ymin:re_ymax, re_xmin:re_xmax]
-        eye_coords = [[le_xmin, le_ymin, le_xmax, le_ymax], [re_xmin, re_ymin, re_xmax, re_ymax]]
-
-        return (lefteye_x, lefteye_y), (righteye_x, righteye_y), eye_coords, left_eye, right_eye
+        # Grab the shape of the face
+        # face_coords = (xmin,ymin,xmax,ymax)
+        height = face_coords[3] - face_coords[1] #ymax-ymin
+        width = face_coords[2] - face_coords[0]
+        
+        # Calculate coordinates for the left eye
+        x_le = int(landmarks[0] * width) 
+        y_le = int(landmarks[1]  *  height)
+        
+        #Consider offset of face from main image
+        xmin_le = face_coords[0] + x_le - 30
+        ymin_le = face_coords[1] + y_le - 30
+        xmax_le = face_coords[0] + x_le + 30
+        ymax_le = face_coords[1] + y_le + 30
+         
+        # Calculate coordinates for the right eye
+        x_re = int(landmarks[2]  *  width)
+        y_re = int(landmarks[3]  *  height)
+        
+        #Consider offset of face from main image
+        xmin_re = face_coords[0] + x_re - 30
+        ymin_re = face_coords[1] + y_re - 30
+        xmax_re = face_coords[0] + x_re + 30
+        ymax_re = face_coords[1] + y_re + 30
+        
+        if(display):
+            # Draw the boxes 
+            cv2.rectangle(image, (xmin_le, ymin_le), (xmax_le, ymax_le), (0,255,0), 3)        
+            cv2.rectangle(image, (xmin_re, ymin_re), (xmax_re, ymax_re), (0,255,0), 3)
+        
+        # Eyes center
+        left_eye_center =[face_coords[0] + x_le, face_coords[1] + y_le]
+        right_eye_center = [face_coords[0] + x_re , face_coords[1] + y_re]      
+        eyes_center = [left_eye_center, right_eye_center ]
+        
+        # Crop the left eye from the image
+        left_eye = image[ymin_le:ymax_le, xmin_le:xmax_le]
+        
+        # Crop the right eye from the image
+        right_eye = image[ymin_re:ymax_re, xmin_re:xmax_re]
+        
+        return image, left_eye, right_eye, eyes_center

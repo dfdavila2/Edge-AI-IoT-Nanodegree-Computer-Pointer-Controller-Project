@@ -10,6 +10,8 @@ This class is provided to help get you started; you can choose whether you want 
 import pyautogui
 
 class MouseController:
+    pyautogui.FAILSAFE = True
+    
     def __init__(self, precision, speed):
         precision_dict={'high':100, 'low':1000, 'medium':500}
         speed_dict={'fast':1, 'slow':10, 'medium':5}

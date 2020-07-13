@@ -1,94 +1,88 @@
-'''
-This is a sample class for a model. You may choose to use it as-is or make any changes to it.
-This has been provided just to give you an idea of how to structure your model class.
-'''
 
 import os
-from openvino.inference_engine import IENetwork, IECore
 import cv2
 import math
+from openvino.inference_engine import IECore
+from util_function import  preprocess_input
 
-
-class Gaze_Estimation_Model:
+class Model_gaze_estimation:
     '''
-    Class for the Face Detection Model.
+    Class for the Gaze Estimation Model.
     '''
-
     def __init__(self, model_name, device='CPU', extensions=None):
-        self.core = None
-        self.network = None
-        self.input = None
-        self.output = None
-        self.exec_network = None
-        self.device = device
+        '''
+        Set instance variables.
+        '''
+        self.device=device
+        self.model=model_name
+        self.model_structure=model_name
+        self.model_weights=os.path.splitext(self.model_structure)[0] + ".bin"
+        
+        try:
+            self.model=IECore().read_network(self.model_structure, self.model_weights)
+        except Exception as e:
+            raise ValueError("Could not Initialise the network. Have you enterred the correct model path?")
 
-        self.core = IECore()
-        self.network = self.core.read_network(model=str(model_name),
-                                              weights=str(os.path.splitext(model_name)[0] + ".bin"))
-
-        self.input = next(iter(self.network.inputs))
-        self.output = next(iter(self.network.outputs))
+        self.input_name=[i for i in self.model.inputs.keys()]
+        self.input_shape=self.model.inputs[self.input_name[1]].shape
+        self.output_name=[o for o in self.model.outputs.keys()]   
 
     def load_model(self):
         '''
-        This method is for loading the model to the device specified by the user.
-        If your model requires any Plugins, this is where you can load them.
+        Load the model to the specified device.
         '''
-        self.exec_network = self.core.load_network(self.network, self.device)
+        # Initialize the plugin
+        core = IECore()
+        
+        # Load the network into the plugin
+        self.exec_network = core.load_network(network=self.model, device_name=self.device)
+        
+        # Return the loaded inference plugin
         return self.exec_network
 
-    def predict(self, left_eye, right_eye, head_position):
+    def predict(self, image, left_eye, right_eye, eyes_center, head_pose_angles, display):
         '''
-        This method is meant for running predictions on the input image.
+        Run predictions on the input image.
         '''
-        processed_left_eye = self.preprocess_input(left_eye)
-        processed_right_eye = self.preprocess_input(right_eye)
-        # inference_start_time = time.time()
-        self.exec_network.start_async(request_id=0,
-                                      inputs={'left_eye_image': processed_left_eye,
-                                              'right_eye_image': processed_right_eye,
-                                              'head_pose_angles': head_position})
-
+        # Pre-process the images
+        p_left_eye = preprocess_input(left_eye, self.input_shape)
+        p_right_eye = preprocess_input(right_eye, self.input_shape)
+        
+        # Start an asynchronous request #
+        self.exec_network.start_async(request_id=0, inputs={'left_eye_image': p_left_eye,
+                                                         'right_eye_image': p_right_eye,
+                                                         'head_pose_angles': head_pose_angles})
+        
+        # Wait for the result
         if self.exec_network.requests[0].wait(-1) == 0:
-            #     inference_end_time = time.time()
-            #     total_inference_time = inference_end_time - inference_start_time
-            result = self.exec_network.requests[0].outputs[self.output]
-            cords = self.preprocess_output(result[0], head_position)
-            return result[0], cords
+            
+            # Get the results of the inference request
+            outputs = self.exec_network.requests[0].outputs[self.output_name[0]]
+            
+            # Get the output image and the gaze vector
+            out_image, gaze_vector = self.preprocess_output(image, outputs, eyes_center, display)
+                    
+        return out_image, gaze_vector
 
-    def check_model(self):
-        supported_layers = self.core.query_network(network=self.network, device_name=self.device)
-        unsupported_layers = [layer for layer in self.network.layers.keys() if layer not in supported_layers]
-        if len(unsupported_layers) > 0:
-            print("Please check extention for these unsupported layers =>" + str(unsupported_layers))
-            exit(1)
-        print("All layers are supported !!")
-
-    def preprocess_input(self, image):
+    def preprocess_output(self, image, outputs, eyes_center, display):
         '''
-        Before feeding the data into the model for inference,
-        you might have to preprocess it. This function is where you can do that.
+        Preprocess the output.
         '''
-        net_input_shape = self.network.inputs['right_eye_image'].shape
-        p_frame = cv2.resize(image, (net_input_shape[3], net_input_shape[2]))
-        p_frame = p_frame.transpose(2, 0, 1)
-        # p_frame = np.expand_dims(p_frame, axis=1)
-        p_frame = p_frame.reshape(1, *p_frame.shape)
-        return p_frame
+        gaze_vector =  outputs[0]
+        
+        #Draw output
+        if(display):
+        
+            # Left eye center
+            left_eye_center_x = int(eyes_center[0][0])
+            left_eye_center_y = int(eyes_center[0][1])
+            
+            # Right eye center
+            right_eye_center_x = int(eyes_center[1][0])
+            right_eye_center_y = int(eyes_center[1][1])
+            
+            #Draw arrowed Lines
+            cv2.arrowedLine(image, (left_eye_center_x, left_eye_center_y), (left_eye_center_x + int(gaze_vector[0] * 100), left_eye_center_y + int(-gaze_vector[1] * 100)), (255,0,0), 5)
+            cv2.arrowedLine(image, (right_eye_center_x, right_eye_center_y), (right_eye_center_x + int(gaze_vector[0] * 100), right_eye_center_y + int(-gaze_vector[1] * 100)), (255,0,0), 5)
 
-    def preprocess_output(self, output, head_position):
-        '''
-        Before feeding the output of this model to the next model,
-        you might have to preprocess the output. This function is where you can do that.
-        '''
-
-        roll = head_position[2]
-        gaze_vector = output / cv2.norm(output)
-
-        cosValue = math.cos(roll * math.pi / 180.0)
-        sinValue = math.sin(roll * math.pi / 180.0)
-
-
-        x = gaze_vector[0] * cosValue * gaze_vector[1] * sinValue
-        y = gaze_vector[0] * sinValue * gaze_vector[1] * cosValue
-        return (x, y)
+        return image, gaze_vector 
