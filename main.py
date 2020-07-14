@@ -1,7 +1,7 @@
+
 import sys
 import cv2
 import time
-import os
 import logging as log
 
 from argparse import ArgumentParser
@@ -45,16 +45,12 @@ def build_argparser():
     parser.add_argument("-pt", "--prob_threshold", type=float, default=0.6,
                         help="Probability threshold for detections filtering"
                         "(0.6 by default)")
-
-    parser.add_argument("-o", "--output_dir", help = "Path to the output directory", type = str, default = None)
     
     parser.add_argument("-p", "--mouse_precision", required=False, default='high', type=str,
                         help="Set the precision for mouse movement: high, low, medium.")
                         
     parser.add_argument("-sp", "--mouse_speed", required=False, default='fast', type=str,
                         help="Set the speed for mouse movement: fast, slow, medium.")
-
-    parser.add_argument("-m", "--mode", help = "async or sync mode", type = str, default = 'async')
                         
     return parser
 
@@ -104,8 +100,6 @@ def infer_on_stream(args):
     facial_landmarks_network.load_model()
     gaze_estimation_network.load_model()
     
-    print("All models have been loaded successfully...")
-    
     end_load = time.time() -  start_load 
     
     # Handle the input stream
@@ -148,7 +142,7 @@ def infer_on_stream(args):
      
     end_inf = time.time() - start_inf
     
-    print("Total model loading time: {} s\nTotal inference time: {} s".format(end_load, end_inf))
+    print("Total loading time: {}\nTotal inference time: {} ".format(end_load, end_inf))
     
     # Release the capture
     feed.close()
@@ -161,109 +155,11 @@ def main():
 
     :return: None
     """
-    
     # Grab command line args
     args = build_argparser().parse_args()
 
-    '''
-    if args.output_dir:
-        with open(os.path.join(args.output_dir, 'stats.txt'), 'a') as f:
-            f.write(str(round(model_load_time))+'\n')
-    '''
-    
     #Perform inference on the input stream
     infer_on_stream(args)
 
-    if args.input == 'cam':
-       input_stream = 0
-    else:
-        input_stream = args.input
-        assert os.path.isfile(args.input), "The input file does not exist"
-
-    cap = cv2.VideoCapture(input_stream)
-    initial_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    initial_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    video_len = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    fps = int(cap.get(cv2.CAP_PROP_FPS))
-
-    out = cv2.VideoWriter(os.path.join(args.output_dir, "output.mp4"), 
-            cv2.VideoWriter_fourcc(*"mp4v"), fps, (initial_w, initial_h), True)
-    
-    frame_count = 0
-
-    job_id = 1
-
-    infer_time_start = time.time()
-
-    if input_stream:
-        cap.open(args.input)
-        # Adjust DELAY to match the number of FPS of the video file
-
-    if not cap.isOpened():
-        logger.error("ERROR! Unable to open video source")
-        return
-
-    if args.mode == 'sync':
-        async_mode = False
-    else:
-        async_mode = True
-
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            print ("Error: BREAKING")
-            break
-
-        frame_count += 1
-        looking = 0
-        POSE_CHECKED = False
-
-        if frame is None:
-            log.error("ERROR: FRAME is nowhere to be found")
-            break
-
-        initial_w = int(cap.get(3))
-        initial_h = int(cap.get(4))
-
-        # Start asynchronous inference for specified request
-        inf_start_fd = time.time()
-        
-        # Results of the output layer of the network
-        #coords, frame = face_detection_network.predict(frame)
-        
-        det_time_fd = time.time() - inf_start_fd
-
-        # Draw performance stats
-        inf_time_message = "Face Inference time: {:.3f} ms.".format(det_time_fd * 1000)
-        #
-        if POSE_CHECKED:
-            cv2.putText(frame, "Head pose Inference time: {:.3f} ms.".format(det_time_hp * 1000), (0, 35),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
-            cv2.putText(frame, inf_time_message, (0, 15), cv2.FONT_HERSHEY_COMPLEX,
-                        0.5, (255, 0, 0), 1)
-        out.write(frame)
-        if frame_count%10 == 0:
-            print("Inference time = ", int(time.time()-infer_time_start))
-            print('Frame count {} and video length {}'.format( frame_count, video_len))
-        if args.output_dir:
-            total_time = time.time() - infer_time_start
-            with open(os.path.join(args.output_dir, 'stats.txt'), 'w') as f:
-                f.write(str(round(total_time, 1))+'\n')
-                f.write(str(frame_count)+'\n')
-
-    if args.output_dir:
-        with open(os.path.join(args.output_dir, 'stats.txt'), 'a') as f:
-            f.write(str(round(model_load_time))+'\n')
-
-    # Clean all models
-    face_detection_network.clean()
-    pose_det.clean()
-    land_det.clean()
-    gaze_est.clean()
-    # release cv2 cap
-    cap.release()
-    cv2.destroyAllWindows()
-    
 if __name__ == '__main__':
     main()
-    sys.exit()
