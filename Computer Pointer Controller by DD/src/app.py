@@ -182,6 +182,7 @@ def main():
         input_stream = args.input
         assert os.path.isfile(args.input), "The input file does not exist"
     
+    """
     cap = cv2.VideoCapture(input_stream)
     initial_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     initial_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -190,7 +191,7 @@ def main():
     
     out = cv2.VideoWriter(os.path.join(args.output_dir, "output_video.avi"), 
             #cv2.VideoWriter_fourcc(*"MP4V"), fps, (initial_w, initial_h), True)
-            cv2.VideoWriter_fourcc(*"avc1"), fps, (initial_w, initial_h), True)
+            #cv2.VideoWriter_fourcc(*"mp4v"), fps, (initial_w, initial_h), True)
             #cv2.VideoWriter_fourcc(*"avc1"), fps, (initial_w, initial_h), True)
     """
     cap = cv2.VideoCapture(input_stream)
@@ -206,15 +207,16 @@ def main():
                                   (frame_width, frame_height))
         org_width = int(cap.get(3))
         org_height = int(cap.get(4))
-        
+    """    
     if single_image_mode:
       cv2.imwrite('output_image.jpg', frame)
     else:
       log.info("Writing output video")
       out.write(frame)
       cv2.imshow('frame', frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+    
+    #if cv2.waitKey(1) & 0xFF == ord('q'):
+     #   break
     """
     frame_count = 0
 
@@ -235,26 +237,7 @@ def main():
     else:
         async_mode = True
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            print ("Error: BREAKING")
-            break
-
-        frame_count += 1
-        looking = 0
-        
-        if frame is None:
-            log.error("ERROR: FRAME is nowhere to be found")
-            break
-
-        initial_w = int(cap.get(3))
-        initial_h = int(cap.get(4))
-
-        # Start asynchronous inference for specified request
-        inf_start_fd = time.time()
-
-           #Clean all models
+    #Clean all models
     #face_detection_network.clean()
     #head_pose_network.clean()
     #facial_landmarks_network.clean()
