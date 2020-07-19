@@ -3,10 +3,10 @@
 ## Content 
 
 - [Overview](#overview)
-- [Project Set up and Installation](##project-setup-and-installation)
+- [Project Set up and Installation](#project-setup-and-installation)
 - [Directory Structure](#directory-structure)
 - [Demo](#demo)
-- [Documentation](##documentation)
+- [Documentation](#documentation)
 - [Benchmarks](#benchmarks)
 - [Results](#results)
 
@@ -46,7 +46,7 @@ To develop this app my system features were:
 ## Demo
 *TODO:* Explain how to run a basic demo of your model.
 
-In order to run the app just fill the arguments required as explained in the next section. Here a video showing what you are suppose to see once the entered command is successful.
+In order to run the app just fill the arguments required as explained in the next section. 
 
 First of all you need to install the latest version of the [openVINO toolkit](https://docs.openvinotoolkit.org/latest/openvino_docs_install_guides_installing_openvino_macos.html).
 
@@ -78,26 +78,34 @@ $ source name_env/bin/activate
 
 - Set the Toolkit's Environment Variables:
 
-$source /opt/intel/openvino/bin/setupvars.sh
+$ source /opt/intel/openvino/bin/setupvars.sh
 
 - To download the models run the following:
 $ cd /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader
 
-- Download face detection model
+- Download face detection model:
+
+
 $ ./downloader.py --name face-detection-adas-binary-0001 
 
-- Download head_pose_estimation model
+- Download head_pose_estimation model:
+
+
 $ ./downloader.py --name head-pose-estimation-adas-0001
 
-- Download facial landmarks detection model
+- Download facial landmarks detection model:
+
+
 $ ./downloader.py --name landmarks-regression-retail-0009
 
-- Download gaze estimation model
+- Download gaze estimation model:
+
+
 $ ./downloader.py --name gaze-estimation-adas-0002
 
 - Get all the dendencies up and running:
 
-$ cd <PATH for app directory>
+$ cd "<PATH for app directory>"
 
 $ pip3 install -r requirements.txt
 
@@ -140,15 +148,6 @@ $ deactivate
 ## Benchmarks
 *TODO:* Include the benchmark results of running your model on multiple hardwares and multiple model precisions. Your benchmarks can include: model loading time, input/output processing time, model inference time etc.
 
-## Results
-*TODO:* Discuss the benchmark results and explain why you are getting the results you are getting. For instance, explain why there is difference in inference time for FP32, FP16 and INT8 models.
-
-- FP32 refers to single-precision (32-bit) floating point format, a number format that can represent an enormous range of values with a high degree of mathematical precision. Most CPUs and GPUs handle 32-bit floating point operations very efficiently, and many programs that use neural networks, including AIXPRT, use FP32 precision by default.
-
-- FP16 refers to half-precision (16-bit) floating point format, a number format that uses half the number of bits as FP32 to represent a model’s parameters. FP16 is a lower level of precision than FP32, but it still provides a great enough numerical range to successfully perform many inference tasks. FP16 often requires less time than FP32, and uses less memory.
-
-- INT8 refers to the 8-bit integer data type. INT8 data is better suited for certain types of calculations than floating point data, but it has a relatively small numeric range compared to FP16 or FP32. Depending on the model, INT8 precision can significantly improve latency and throughput, but there may be a loss of accuracy. INT8 precision does not always trade accuracy for speed. 
-
 - **INT8**
 Total model loading time: 9.48 s
 Total inference time: 135.56 s
@@ -160,6 +159,15 @@ Total inference time: 110.61 s
 - **FP32**
 Total model loading time: 6.31 s
 Total inference time: 100.27 s
+
+## Results
+*TODO:* Discuss the benchmark results and explain why you are getting the results you are getting. For instance, explain why there is difference in inference time for FP32, FP16 and INT8 models.
+
+- FP32 refers to single-precision (32-bit) floating point format, a number format that can represent an enormous range of values with a high degree of mathematical precision. Most CPUs and GPUs handle 32-bit floating point operations very efficiently, and many programs that use neural networks, including AIXPRT, use FP32 precision by default.
+
+- FP16 refers to half-precision (16-bit) floating point format, a number format that uses half the number of bits as FP32 to represent a model’s parameters. FP16 is a lower level of precision than FP32, but it still provides a great enough numerical range to successfully perform many inference tasks. FP16 often requires less time than FP32, and uses less memory.
+
+- INT8 refers to the 8-bit integer data type. INT8 data is better suited for certain types of calculations than floating point data, but it has a relatively small numeric range compared to FP16 or FP32. Depending on the model, INT8 precision can significantly improve latency and throughput, but there may be a loss of accuracy. INT8 precision does not always trade accuracy for speed. 
 
 As expected the best performance has been displayed when using a FP32 precision, both loading and inference time are the lowest.
 
