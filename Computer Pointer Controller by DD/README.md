@@ -32,7 +32,7 @@ To develop this app my system features were:
 - openVINO toolkit 2020.3
 - python 3.5.5
 
-### Directory structure
+## Directory structure
 
 ![](./images/starter_directory.png)  
 
