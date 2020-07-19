@@ -3,7 +3,7 @@
 ## Content 
 
 - [Overview](#overview)
-- [Project Set up and Installation](#project-setup-and-installation)
+- [Project Set up and Installation](#project-set-up-and-installation)
 - [Directory Structure](#directory-structure)
 - [Demo](#demo)
 - [Documentation](#documentation)
@@ -12,6 +12,7 @@
 
 *TODO:* Write a short introduction to your project
 
+## Overview
 This app uses a gaze detection model to control the mouse pointer of your computer. This model is called Gaze Estimation model and it is used to estimate the gaze of the user's eyes and change the mouse pointer position accordingly. 
 
 Besides this, there are other three models involved to detect faces, head pose and landmarks. The pipeline workflow is showned as follows:
