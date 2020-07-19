@@ -39,22 +39,24 @@ def build_argparser():
                         help="Flag to display the outputs of the intermediate models")
 
     parser.add_argument("-d", "--device", required=False, default="CPU", type=str,
-                        help="Specify the target device to infer on: "
-                             "CPU, GPU, FPGA or MYRIAD.")
+                        help="Choose the target device used for inference: "
+                             "CPU, IGPU, MYRIAD or FPGA.")
     
-    parser.add_argument("-pt", "--prob_threshold", type=float, default=0.6,
+    parser.add_argument("-pt", "--prob_threshold",required=False, default=0.5, type=float,
                         help="Probability threshold for detections filtering"
-                        "(0.6 by default)")
+                        "(0.5 by default)")
 
-    parser.add_argument("-o", "--output_dir", help = "Path to the output directory", type = str, default = None)
+    parser.add_argument("-o", "--output_dir", required=False, default = None, type = str,
+                        help = "Path to the output directory"     )
     
     parser.add_argument("-p", "--mouse_precision", required=False, default='high', type=str,
                         help="Set the precision for mouse movement: high, low, medium.")
                         
     parser.add_argument("-sp", "--mouse_speed", required=False, default='fast', type=str,
-                        help="Set the speed for mouse movement: fast, slow, medium.")
+                        help="Choose among 3 types of mouse speed: fast, slow, medium.")
 
-    parser.add_argument("-m", "--mode", help = "async or sync mode", type = str, default = 'async')
+    parser.add_argument("-m", "--mode", required=False, default = 'async', type = str,
+                        help = "Select between sync or async mode")
                         
     return parser
 
@@ -88,7 +90,7 @@ def infer_on_stream(args):
     :return: None
     """
     
-    # Initialise the classes
+    # Initialising the classes
     face_detection_network = Model_face_detection(args.fd_model, args.device)
     head_pose_network = Model_head_pose_estimation(args.hp_model, args.device)
     facial_landmarks_network =  Model_facial_landmarks_detection(args.fl_model, args.device)
@@ -150,10 +152,10 @@ def infer_on_stream(args):
     
     print("Total model loading time: {} s\nTotal inference time: {} s".format(end_load, end_inf))
     
-    # Release the capture
+    print("Thanks for testing the app!\n")
+    
+    #Release the capture
     feed.close()
-    # Destroy any OpenCV windows
-    cv2.destroyAllWindows
  
 def main():
     """
@@ -179,16 +181,43 @@ def main():
     else:
         input_stream = args.input
         assert os.path.isfile(args.input), "The input file does not exist"
-
+    
+    """
     cap = cv2.VideoCapture(input_stream)
     initial_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     initial_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     video_len = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
-
-    out = cv2.VideoWriter(os.path.join(args.output_dir, "output.mp4"), 
-            cv2.VideoWriter_fourcc(*"mp4v"), fps, (initial_w, initial_h), True)
     
+    out = cv2.VideoWriter(os.path.join(args.output_dir, "output_video.avi"), 
+            #cv2.VideoWriter_fourcc(*"MP4V"), fps, (initial_w, initial_h), True)
+            #cv2.VideoWriter_fourcc(*"mp4v"), fps, (initial_w, initial_h), True)
+            #cv2.VideoWriter_fourcc(*"avc1"), fps, (initial_w, initial_h), True)
+    """
+    cap = cv2.VideoCapture(input_stream)
+
+    if input_stream:
+        cap.open(args.input)
+    if (cap.isOpened() == False):
+        log.error("Unable to read camera feed")
+    else:
+        frame_width = int(cap.get(3))
+        frame_height = int(cap.get(4))
+        out = cv2.VideoWriter('output.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10,
+                                  (frame_width, frame_height))
+        org_width = int(cap.get(3))
+        org_height = int(cap.get(4))
+    """    
+    if single_image_mode:
+      cv2.imwrite('output_image.jpg', frame)
+    else:
+      log.info("Writing output video")
+      out.write(frame)
+      cv2.imshow('frame', frame)
+    
+    #if cv2.waitKey(1) & 0xFF == ord('q'):
+     #   break
+    """
     frame_count = 0
 
     job_id = 1
@@ -208,62 +237,21 @@ def main():
     else:
         async_mode = True
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            print ("Error: BREAKING")
-            break
-
-        frame_count += 1
-        looking = 0
-        POSE_CHECKED = False
-
-        if frame is None:
-            log.error("ERROR: FRAME is nowhere to be found")
-            break
-
-        initial_w = int(cap.get(3))
-        initial_h = int(cap.get(4))
-
-        # Start asynchronous inference for specified request
-        inf_start_fd = time.time()
-        
-        # Results of the output layer of the network
-        #coords, frame = face_detection_network.predict(frame)
-        
-        det_time_fd = time.time() - inf_start_fd
-
-        # Draw performance stats
-        inf_time_message = "Face Inference time: {:.3f} ms.".format(det_time_fd * 1000)
-        #
-        if POSE_CHECKED:
-            cv2.putText(frame, "Head pose Inference time: {:.3f} ms.".format(det_time_hp * 1000), (0, 35),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
-            cv2.putText(frame, inf_time_message, (0, 15), cv2.FONT_HERSHEY_COMPLEX,
-                        0.5, (255, 0, 0), 1)
-        out.write(frame)
-        if frame_count%10 == 0:
-            print("Inference time = ", int(time.time()-infer_time_start))
-            print('Frame count {} and video length {}'.format( frame_count, video_len))
-        if args.output_dir:
-            total_time = time.time() - infer_time_start
-            with open(os.path.join(args.output_dir, 'stats.txt'), 'w') as f:
-                f.write(str(round(total_time, 1))+'\n')
-                f.write(str(frame_count)+'\n')
-
-    if args.output_dir:
-        with open(os.path.join(args.output_dir, 'stats.txt'), 'a') as f:
-            f.write(str(round(model_load_time))+'\n')
-
-    # Clean all models
-    face_detection_network.clean()
-    pose_det.clean()
-    land_det.clean()
-    gaze_est.clean()
-    # release cv2 cap
-    cap.release()
-    cv2.destroyAllWindows()
+    #Clean all models
+    #face_detection_network.clean()
+    #head_pose_network.clean()
+    #facial_landmarks_network.clean()
+    #gaze_estimation_network.clean()
     
+    #Release cv2 cap
+    cap.release()
+
+    #Destroy any OpenCV windows
+    cv2.destroyAllWindows()
+
+    #Release the video output file
+    out.release()
+           
 if __name__ == '__main__':
     main()
     sys.exit()
