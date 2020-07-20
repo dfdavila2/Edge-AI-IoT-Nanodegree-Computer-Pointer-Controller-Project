@@ -63,7 +63,7 @@ What these files do is make the app start a little faster. When the scripts chan
 
 ![Demo run](images/demo.jpg)
 
-In order to run the app just fill the arguments required as explained in the next section. 
+In order to run the app just fill the arguments required as explained in the next section: 
 
 First of all you need to install the latest version of the [openVINO toolkit](https://docs.openvinotoolkit.org/latest/openvino_docs_install_guides_installing_openvino_macos.html).
 
@@ -123,7 +123,7 @@ $ ./downloader.py --name gaze-estimation-adas-0002
 
 - Get all the dendencies up and running:
 
-$ cd "<PATH for app directory>"
+$ cd PATH for app directory
 
 $ pip3 install -r requirements.txt
 
@@ -195,7 +195,7 @@ Total inference time: 100.27 s
 ## Results
 *TODO:* Discuss the benchmark results and explain why you are getting the results you are getting. For instance, explain why there is difference in inference time for FP32, FP16 and INT8 models.
 
-- FP32 refers to single-precision (32-bit) floating point format, a number format that can represent an enormous range of values with a high degree of mathematical precision. Most CPUs and GPUs handle 32-bit floating point operations very efficiently, and many programs that use neural networks, including AIXPRT, use FP32 precision by default.
+- FP32 refers to single-precision (32-bit) floating point format, a number format that can represent an enormous range of values with a high degree of mathematical precision. Most CPUs and GPUs handle 32-bit floating point operations very efficiently, and many programs that use neural networks set FP32 precision by default.
 
 - FP16 refers to half-precision (16-bit) floating point format, a number format that uses half the number of bits as FP32 to represent a model’s parameters. FP16 is a lower level of precision than FP32, but it still provides a great enough numerical range to successfully perform many inference tasks. FP16 often requires less time than FP32, and uses less memory.
 
