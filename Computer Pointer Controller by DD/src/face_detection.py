@@ -1,4 +1,3 @@
-
 import os
 import cv2
 from openvino.inference_engine import IECore

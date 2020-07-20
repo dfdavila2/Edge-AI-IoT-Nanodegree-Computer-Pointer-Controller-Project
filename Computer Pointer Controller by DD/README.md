@@ -34,18 +34,34 @@ To develop this app my system features were:
 
 ## Directory structure
 
-![](./images/starter_directory.png)  
+![](./images/directory.jpg)  
 
-- model.py: Contains a class to load, process and run inference on the models used during the project.
+- bin/demo.mp4: This is the video provided for the demo run.
+
+- images/: Folder containing the images used for this readme file.
+
+- requirements.txt: File containing all the dependecies needed to run this app properly.
+
+- src/: Project folder containing all the scripts for the app.
+
+- pycache/: Folder containing files sharing the names of the .py files in the project's folder, only their extensions will be either .pyc or .pyo. 
+What these files do is make the app start a little faster. When the scripts change, they will be recompiled, and if you delete the files or the whole folder and run your program again, they will reappear (unless you specifically suppress that behavior). 
+
+-app.py: Python file conecting all the modules and classes that are called for the app to execute properly. 
+
+- model.py: Contains a class to load, process and run inference on the models used during the project. One for each model used e.g. 4 in this case.
 
 - input_feeder: contains a class to get imput from a videofile or camera.
 
 - mouse_controller: Contains the code used by the module PyautoGUI which automates tasks in multiple operating systems. "Automate" is generally understood as controlling the mouse and keyboard, although in this particular case other tools such as dialog boxes and screenshots are included. 
 
-- demo.mp4: This is the video provided for the demo run.
+-util_function.py: module containing code for image preprocessing.
 
 ## Demo
+
 *TODO:* Explain how to run a basic demo of your model.
+
+![Demo run](images/demo.jpg)
 
 In order to run the app just fill the arguments required as explained in the next section. 
 
@@ -67,7 +83,7 @@ $ pip3 install virtualenv
 
 $ mkdir python-virtual-environments
 
-$ cd <PATH for python-virtual-environments> 
+$ cd PATH for python-virtual-environments 
 
 - Create a virtual environment:
  
@@ -82,6 +98,7 @@ $ source name_env/bin/activate
 $ source /opt/intel/openvino/bin/setupvars.sh
 
 - To download the models run the following:
+
 $ cd /opt/intel/openvino/deployment_tools/open_model_zoo/tools/downloader
 
 - Download face detection model:
@@ -152,15 +169,27 @@ $ deactivate
 *TODO:* Include the benchmark results of running your model on multiple hardwares and multiple model precisions. Your benchmarks can include: model loading time, input/output processing time, model inference time etc.
 
 - **INT8**
+
+
 Total model loading time: 9.48 s
+
+
 Total inference time: 135.56 s
 
 - **FP16** 
+
+
 Total model loading time: 6.95 s
+
+
 Total inference time: 110.61 s
 
 - **FP32**
+
+
 Total model loading time: 6.31 s
+
+
 Total inference time: 100.27 s
 
 ## Results

@@ -77,7 +77,7 @@ def handle_input_type(input_stream):
     elif input_stream.endswith('.mp4'):
         input_type = 'video'
     else: 
-        log.error('Please enter a valid input! .jpg, .png, .bmp, .mp4, CAM')
+        log.warning('Please enter a valid input! .jpg, .png, .bmp, .mp4, CAM')
         sys.exit()    
     return input_type
 
@@ -166,12 +166,6 @@ def main():
     
     # Grab command line args
     args = build_argparser().parse_args()
-
-    '''
-    if args.output_dir:
-        with open(os.path.join(args.output_dir, 'stats.txt'), 'a') as f:
-            f.write(str(round(model_load_time))+'\n')
-    '''
     
     #Perform inference on the input stream
     infer_on_stream(args)
@@ -182,18 +176,6 @@ def main():
         input_stream = args.input
         assert os.path.isfile(args.input), "The input file does not exist"
     
-    """
-    cap = cv2.VideoCapture(input_stream)
-    initial_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    initial_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    video_len = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    fps = int(cap.get(cv2.CAP_PROP_FPS))
-    
-    out = cv2.VideoWriter(os.path.join(args.output_dir, "output_video.avi"), 
-            #cv2.VideoWriter_fourcc(*"MP4V"), fps, (initial_w, initial_h), True)
-            #cv2.VideoWriter_fourcc(*"mp4v"), fps, (initial_w, initial_h), True)
-            #cv2.VideoWriter_fourcc(*"avc1"), fps, (initial_w, initial_h), True)
-    """
     cap = cv2.VideoCapture(input_stream)
 
     if input_stream:
@@ -207,17 +189,7 @@ def main():
                                   (frame_width, frame_height))
         org_width = int(cap.get(3))
         org_height = int(cap.get(4))
-    """    
-    if single_image_mode:
-      cv2.imwrite('output_image.jpg', frame)
-    else:
-      log.info("Writing output video")
-      out.write(frame)
-      cv2.imshow('frame', frame)
-    
-    #if cv2.waitKey(1) & 0xFF == ord('q'):
-     #   break
-    """
+
     frame_count = 0
 
     job_id = 1
@@ -226,10 +198,10 @@ def main():
 
     if input_stream:
         cap.open(args.input)
-        # Adjust DELAY to match the number of FPS of the video file
+        #Adjust DELAY to match the number of FPS of the video file
 
     if not cap.isOpened():
-        logger.error("ERROR! Unable to open video source")
+        logger.info("ERROR! Unable to open video source")
         return
 
     if args.mode == 'sync':
@@ -237,12 +209,6 @@ def main():
     else:
         async_mode = True
 
-    #Clean all models
-    #face_detection_network.clean()
-    #head_pose_network.clean()
-    #facial_landmarks_network.clean()
-    #gaze_estimation_network.clean()
-    
     #Release cv2 cap
     cap.release()
 
