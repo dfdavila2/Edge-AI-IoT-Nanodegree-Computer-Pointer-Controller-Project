@@ -34,7 +34,7 @@ To develop this app my system features were:
 
 ## Directory structure
 
-![](./images/directory.jpg)  
+![](./images/directory.png)  
 
 - bin/demo.mp4: This is the video provided for the demo run.
 
@@ -163,7 +163,7 @@ $ deactivate
 ## Documentation
 *TODO:* Include any documentation that users might need to better understand your project code. For instance, this is a good place to explain the command line arguments that your project supports.
 
-![App Arguments](images/args.jpg)
+![App Arguments](images/args.png)
 
 ## Benchmarks
 *TODO:* Include the benchmark results of running your model on multiple hardwares and multiple model precisions. Your benchmarks can include: model loading time, input/output processing time, model inference time etc.
